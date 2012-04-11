@@ -24,7 +24,7 @@
 #define SCAN_MERGE_COUNT        4
 
 typedef
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
     struct wpa_scan_res
 #else
     struct wpa_scan_result
@@ -45,7 +45,7 @@ void scan_init( struct wpa_driver_ti_data *mydrv );
 void scan_exit( struct wpa_driver_ti_data *mydrv );
 unsigned long scan_count( struct wpa_driver_ti_data *mydrv );
 scan_ssid_t *scan_get_ssid( scan_result_t *res_ptr );
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 unsigned int scan_merge( struct wpa_driver_ti_data *mydrv,
                          scan_result_t **results, int force_flag,
                          unsigned int number_items, unsigned int max_size );

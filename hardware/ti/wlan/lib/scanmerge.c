@@ -23,7 +23,7 @@
 scan_ssid_t *scan_get_ssid( scan_result_t *res_ptr )
 {
     static scan_ssid_t ssid_temp;
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
     const u8 *res_ie;
 
     res_ie = wpa_scan_get_ie(res_ptr, WLAN_EID_SSID);
@@ -153,7 +153,7 @@ static scan_merge_t *scan_add( SHLIST *head, scan_result_t *res_ptr )
     scan_merge_t *scan_ptr;
     unsigned size = 0;
 
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
     size += res_ptr->ie_len;
 #endif
     scan_ptr = (scan_merge_t *)os_malloc(sizeof(scan_merge_t) + size);
@@ -186,7 +186,7 @@ static int scan_find( scan_merge_t *scan_ptr, scan_result_t *results,
     return 0;
 }
 
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 /*-----------------------------------------------------------------------------
 Routine Name: scan_dup
 Routine Description: Create copy of scan results entry
@@ -223,7 +223,7 @@ Arguments:
    max_size - maximum namber of items
 Return Value: Merged number of items
 -----------------------------------------------------------------------------*/
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 unsigned int scan_merge( struct wpa_driver_ti_data *mydrv,
                          scan_result_t **results, int force_flag,
                          unsigned int number_items, unsigned int max_size )
@@ -249,21 +249,21 @@ unsigned int scan_merge( struct wpa_driver_ti_data *mydrv,
     }
 
     for(i=0;( i < number_items );i++) { /* Find/Add new items */
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
         res_ptr = results[i];
 #else
         res_ptr = &(results[i]);
 #endif
         item = shListFindItem( head, res_ptr, scan_equal );
         if( item ) {
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
             scan_ssid_t *p_ssid;
             scan_result_t *new_ptr;
 #endif
             scan_ptr = (scan_merge_t *)(item->data);
             copy_scan_res(&(scan_ptr->scanres), res_ptr);
             scan_ptr->count = SCAN_MERGE_COUNT;
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 	    p_ssid = scan_get_ssid(res_ptr);
             if (p_ssid && IS_HIDDEN_AP(p_ssid)) {
                 new_ptr = scan_dup(res_ptr);
@@ -290,7 +290,7 @@ unsigned int scan_merge( struct wpa_driver_ti_data *mydrv,
             }
             else {
                 if( number_items < max_size ) {
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
                     res_ptr = scan_dup(&(scan_ptr->scanres));
                     if (res_ptr) {
                         results[number_items] = res_ptr;

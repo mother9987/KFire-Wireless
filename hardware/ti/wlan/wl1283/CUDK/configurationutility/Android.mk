@@ -17,13 +17,26 @@ endif
 ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_5_X)
 WPA_SUPPL_DIR = external/wpa_supplicant
 else
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
+WPA_SUPPL_DIR = external/wpa_supplicant_8/wpa_supplicant
+else
 WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
+endif
 endif
 WPA_SUPPL_DIR_INCLUDE = $(WPA_SUPPL_DIR)
 ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_6_X)
 WPA_SUPPL_DIR_INCLUDE += $(WPA_SUPPL_DIR)/src \
 	$(WPA_SUPPL_DIR)/src/common \
 	$(WPA_SUPPL_DIR)/src/drivers \
+	$(WPA_SUPPL_DIR)/src/l2_packet \
+	$(WPA_SUPPL_DIR)/src/utils \
+	$(WPA_SUPPL_DIR)/src/wps
+endif
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
+WPA_SUPPL_DIR_INCLUDE += $(WPA_SUPPL_DIR)/../src \
+	$(WPA_SUPPL_DIR)/../src/common \
+	$(WPA_SUPPL_DIR)/../src/rsn_supp \
+	$(WPA_SUPPL_DIR)/../src/drivers \
 	$(WPA_SUPPL_DIR)/src/l2_packet \
 	$(WPA_SUPPL_DIR)/src/utils \
 	$(WPA_SUPPL_DIR)/src/wps

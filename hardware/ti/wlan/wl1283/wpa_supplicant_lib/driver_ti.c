@@ -175,7 +175,11 @@ static int wpa_driver_tista_driver_start( void *priv )
 		wpa_msg(drv->ctx, MSG_INFO, WPA_EVENT_DRIVER_STATE "HANGED");
 	}
 	else {
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+		os_sleep(0, 400000); /* delay 400 ms */
+#else
 		os_sleep(0, WPA_DRIVER_WEXT_WAIT_US); /* delay 400 ms */
+#endif
 		wpa_printf(MSG_DEBUG, "wpa_driver_tista_driver_start success");
 	}
 	return res;
@@ -248,12 +252,21 @@ static int wpa_driver_tista_scan( void *priv, const u8 *ssid, size_t ssid_len )
 	os_memset(&scanParams, 0, sizeof(scan_Params_t));
 	/* Initialize scan parameters */
 	scan_type = drv->scan_type;
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+	if (wpa_s->prev_scan_ssid != WILDCARD_SSID_SCAN) {
+		if (wpa_s->prev_scan_ssid->scan_ssid) {
+			scan_type = SCAN_TYPE_NORMAL_ACTIVE;
+			scan_probe_flag = 1;
+		}
+	}
+#else
 	if (wpa_s->prev_scan_ssid != BROADCAST_SSID_SCAN) {
 		if (wpa_s->prev_scan_ssid->scan_ssid) {
 			scan_type = SCAN_TYPE_NORMAL_ACTIVE;
 			scan_probe_flag = 1;
 		}
 	}
+#endif
 
 	scanParams.scanType = scan_type;
 	scanParams.numOfChannels = drv->scan_channels;
@@ -618,11 +631,13 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 
 	if( os_strcasecmp(cmd, "stop") == 0 ) {
 		wpa_printf(MSG_DEBUG,"Stop command");
+#ifndef WPA_SUPPLICANT_VER_0_8_X
 		if ((wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) &&
 		    (flags & IFF_UP)) {
 			wpa_printf(MSG_ERROR, "TI: %s when iface is UP", cmd);
 			wpa_driver_wext_set_ifflags(drv->wext, flags & ~IFF_UP);
 		}
+#endif
 		ret = wpa_driver_tista_driver_stop(priv);
 		if( ret == 0 ) {
 			scan_exit(drv); /* Clear scan cache */
@@ -846,7 +861,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 	return ret;
 }
 
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8
 /*-----------------------------------------------------------------------------
 Routine Name: wpa_driver_tista_set_probe_req_ie
 Routine Description: set probe request ie for WSC mode change
@@ -1042,6 +1057,17 @@ static int wpa_driver_tista_set_auth_alg(void *priv, int auth_alg)
 	int algs = 0, res;
 
         TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+	if (auth_alg & WPA_DRIVER_AUTH_OPEN)
+		algs |= IW_AUTH_ALG_OPEN_SYSTEM;
+	if (auth_alg & WPA_DRIVER_AUTH_SHARED)
+		algs |= IW_AUTH_ALG_SHARED_KEY;
+	if (auth_alg & WPA_DRIVER_AUTH_LEAP)
+		algs |= IW_AUTH_ALG_LEAP;
+	if (algs == 0) {
+		/* at least one algorithm should be set */
+		algs = IW_AUTH_ALG_OPEN_SYSTEM;
+#else
 	if (auth_alg & AUTH_ALG_OPEN_SYSTEM)
 		algs |= IW_AUTH_ALG_OPEN_SYSTEM;
 	if (auth_alg & AUTH_ALG_SHARED_KEY)
@@ -1051,6 +1077,7 @@ static int wpa_driver_tista_set_auth_alg(void *priv, int auth_alg)
 	if (algs == 0) {
 		/* at least one algorithm should be set */
 		algs = IW_AUTH_ALG_OPEN_SYSTEM;
+#endif
 	}
 
 	res = wpa_driver_tista_set_auth_param(drv, IW_AUTH_80211_AUTH_ALG,
@@ -1200,6 +1227,22 @@ static int wpa_driver_tista_disassociate(void *priv, const u8 *addr,
 	return ret;
 }
 
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+static int wpa_driver_tista_set_key(const char *ifname, void *priv, enum wpa_alg alg,
+			    const u8 *addr, int key_idx,
+			    int set_tx, const u8 *seq, size_t seq_len,
+			    const u8 *key, size_t key_len)
+{
+	struct wpa_driver_ti_data *drv = priv;
+	int ret;
+
+	wpa_printf(MSG_DEBUG, "%s", __func__);
+	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
+	ret = wpa_driver_wext_set_key(ifname, drv->wext, alg, addr, key_idx, set_tx,
+					seq, seq_len, key, key_len);
+	return ret;
+}
+#else
 static int wpa_driver_tista_set_key(void *priv, wpa_alg alg,
 			    const u8 *addr, int key_idx,
 			    int set_tx, const u8 *seq, size_t seq_len,
@@ -1214,6 +1257,7 @@ static int wpa_driver_tista_set_key(void *priv, wpa_alg alg,
 					seq, seq_len, key, key_len);
 	return ret;
 }
+#endif
 
 static int wpa_driver_tista_set_gen_ie(void *priv, const u8 *ie, size_t ie_len)
 {
@@ -1234,7 +1278,7 @@ static int wpa_driver_tista_set_gen_ie(void *priv, const u8 *ie, size_t ie_len)
 	return ret;
 }
 
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 static struct wpa_scan_results *wpa_driver_tista_get_scan_results(void *priv)
 {
 	struct wpa_driver_ti_data *drv = priv;
@@ -1315,17 +1359,19 @@ static int wpa_driver_tista_associate(void *priv,
 	wpa_printf(MSG_DEBUG, "%s", __FUNCTION__);
 	TI_CHECK_DRIVER( drv->driver_is_loaded, -1 );
 
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 #ifdef ANDROID
 	((struct wpa_driver_wext_data *)(drv->wext))->skip_disconnect = 0;
 #endif
 #endif
 
+#ifndef WPA_SUPPLICANT_VER_0_8_X
 	if (wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) {
 		if (!(flags & IFF_UP)) {
 			wpa_driver_wext_set_ifflags(drv->wext, flags | IFF_UP);
 		}
 	}
+#endif
 
 #if 0
 	if (!params->bssid)
@@ -1340,7 +1386,7 @@ static int wpa_driver_tista_associate(void *priv,
 
 	if (params->wpa_ie == NULL || params->wpa_ie_len == 0)
 		value = IW_AUTH_WPA_VERSION_DISABLED;
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 	else if (params->wpa_ie[0] == WLAN_EID_RSN)
 #else
 	else if (params->wpa_ie[0] == RSN_INFO_ELEM)
@@ -1362,7 +1408,7 @@ static int wpa_driver_tista_associate(void *priv,
 	value = params->key_mgmt_suite != KEY_MGMT_NONE ||
 		params->pairwise_suite != CIPHER_NONE ||
 		params->group_suite != CIPHER_NONE ||
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 		(params->wpa_ie_len && (params->key_mgmt_suite != KEY_MGMT_WPS));
 #else
 		params->wpa_ie_len;
@@ -1415,12 +1461,18 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.get_bssid = wpa_driver_tista_get_bssid,
 	.get_ssid = wpa_driver_tista_get_ssid,
 	.set_ssid = wpa_driver_tista_set_ssid,
+#ifndef WPA_SUPPLICANT_VER_0_8_X
 	.set_wpa = wpa_driver_tista_set_wpa,
+#endif
 	.set_key = wpa_driver_tista_set_key,
 	.set_countermeasures = wpa_driver_tista_set_countermeasures,
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+	.scan2 = wpa_driver_tista_scan,
+#else
 	.set_drop_unencrypted = wpa_driver_tista_set_drop_unencrypted,
 	.scan = wpa_driver_tista_scan,
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#endif
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 	.get_scan_results2 = wpa_driver_tista_get_scan_results,
 #else
 	.get_scan_results = wpa_driver_tista_get_scan_results,
@@ -1428,7 +1480,9 @@ const struct wpa_driver_ops wpa_driver_custom_ops = {
 	.deauthenticate = wpa_driver_tista_deauthenticate,
 	.disassociate = wpa_driver_tista_disassociate,
 	.associate = wpa_driver_tista_associate,
+#ifndef WPA_SUPPLICANT_VER_0_8_X
 	.set_auth_alg = wpa_driver_tista_set_auth_alg,
+#endif
 	.get_mac_addr = wpa_driver_tista_get_mac_addr,
 	.init = wpa_driver_tista_init,
 	.deinit = wpa_driver_tista_deinit,

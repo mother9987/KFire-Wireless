@@ -28,7 +28,7 @@
 #include "wpa_ctrl.h"
 #include "wpa_supplicant_i.h"
 #include "config.h"
-#ifdef WPA_SUPPLICANT_VER_0_6_X
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 #include "ieee802_11_defs.h"
 #else
 #include "wpa.h"
