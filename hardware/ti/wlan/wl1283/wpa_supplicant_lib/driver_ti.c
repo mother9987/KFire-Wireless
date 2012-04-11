@@ -861,7 +861,7 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 	return ret;
 }
 
-#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8
+#if defined WPA_SUPPLICANT_VER_0_6_X || defined WPA_SUPPLICANT_VER_0_8_X
 /*-----------------------------------------------------------------------------
 Routine Name: wpa_driver_tista_set_probe_req_ie
 Routine Description: set probe request ie for WSC mode change
