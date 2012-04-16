@@ -110,5 +110,8 @@ struct wpa_driver_ops *wpa_drivers[] =
 #ifdef CONFIG_DRIVER_NONE
 	&wpa_driver_none_ops,
 #endif /* CONFIG_DRIVER_NONE */
+#ifdef CONFIG_DRIVER_CUSTOM
+	&wpa_driver_custom_ops,
+#endif /* CONFIG_DRIVER_CUSTOM *
 	NULL
 };
