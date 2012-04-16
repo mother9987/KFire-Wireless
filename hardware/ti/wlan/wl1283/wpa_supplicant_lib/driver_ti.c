@@ -631,7 +631,13 @@ static int wpa_driver_tista_driver_cmd( void *priv, char *cmd, char *buf, size_t
 
 	if( os_strcasecmp(cmd, "stop") == 0 ) {
 		wpa_printf(MSG_DEBUG,"Stop command");
-#ifndef WPA_SUPPLICANT_VER_0_8_X
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+		if ((wpa_driver_tista_get_ifflags(drv->wext, &flags) == 0) &&
+		    (flags & IFF_UP)) {
+			wpa_printf(MSG_ERROR, "TI: %s when iface is UP", cmd);
+			wpa_driver_tista_set_ifflags(drv->wext, flags & ~IFF_UP);
+		}
+#else
 		if ((wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) &&
 		    (flags & IFF_UP)) {
 			wpa_printf(MSG_ERROR, "TI: %s when iface is UP", cmd);
@@ -1365,7 +1371,13 @@ static int wpa_driver_tista_associate(void *priv,
 #endif
 #endif
 
-#ifndef WPA_SUPPLICANT_VER_0_8_X
+#ifdef WPA_SUPPLICANT_VER_0_8_X
+	if (wpa_driver_tista_get_ifflags(drv->wext, &flags) == 0) {
+		if (!(flags & IFF_UP)) {
+			wpa_driver_tista_set_ifflags(drv->wext, flags | IFF_UP);
+		}
+	}
+#else
 	if (wpa_driver_wext_get_ifflags(drv->wext, &flags) == 0) {
 		if (!(flags & IFF_UP)) {
 			wpa_driver_wext_set_ifflags(drv->wext, flags | IFF_UP);
@@ -1453,6 +1465,36 @@ static int wpa_driver_tista_set_operstate(void *priv, int state)
 	/* Dm: drv->operstate = state; */
     wpa_driver_tista_private_send(priv, RSN_PORT_STATUS_PARAM, &state, sizeof(state), NULL, 0);
 	return wpa_driver_wext_set_operstate(drv->wext, state);
+}
+
+static int wpa_driver_tista_set_ifflags(struct wpa_driver_wext_data *drv,
+					      int flags)
+{
+	struct ifreq ifr;
+
+	os_memset(&ifr, 0, sizeof(ifr));
+	os_strlcpy(ifr.ifr_name, drv->ifname, IFNAMSIZ);
+	ifr.ifr_flags = flags & 0xffff;
+	if (ioctl(drv->ioctl_sock, SIOCSIFFLAGS, (caddr_t) &ifr) < 0) {
+		wpa_printf(MSG_ERROR, "ioctl[SIOCSIFFLAGS]");
+		return -1;
+	}
+	return 0;
+}
+
+static int wpa_driver_tista_get_ifflags(struct wpa_driver_wext_data *drv,
+					      int *flags)
+{
+	struct ifreq ifr;
+
+	os_memset(&ifr, 0, sizeof(ifr));
+	os_strlcpy(ifr.ifr_name, drv->ifname, IFNAMSIZ);
+	if (ioctl(drv->ioctl_sock, SIOCGIFFLAGS, (caddr_t) &ifr) < 0) {
+		wpa_printf(MSG_ERROR, "ioctl[SIOCGIFFLAGS]");
+		return -1;
+	}
+	*flags = ifr.ifr_flags & 0xffff;
+	return 0;
 }
 
 const struct wpa_driver_ops wpa_driver_custom_ops = {
