@@ -21,7 +21,7 @@ endif
 ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_5_X)
 WPA_SUPPL_DIR = external/wpa_supplicant
 else
-Wifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
+ifeq ($(WPA_SUPPLICANT_VERSION),VER_0_8_X)
 WPA_SUPPL_DIR = external/wpa_supplicant_8/wpa_supplicant
 else
 WPA_SUPPL_DIR = external/wpa_supplicant_6/wpa_supplicant
